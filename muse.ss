@@ -2,7 +2,7 @@
 (define (file->string name)
     "borrowed from Racket; takes a file name, and returns the file as lines."
     (with-exception-handler
-        (lambda () "") ;; return an empty string on exception
+        (lambda (x) "") ;; return an empty string on exception
         (lambda ()
             (let* ((fh (open name :read))
                    (data (string-join (read-lines fh) "\n")))
@@ -12,7 +12,7 @@
 (define (file->lines name)
     "borrowed from Racket; takes a file name, and returns the file as lines."
     (with-exception-handler
-        (lambda () "") ;; return an empty string on exception
+        (lambda (x) "") ;; return an empty string on exception
         (lambda ()
             (let* ((fh (open name :read))
                    (data (read-lines fh)))
@@ -22,7 +22,7 @@
 (define (file->object name)
     "same as the above, but READs an object from file"
     (with-exception-handler
-        (lambda () "") ;; return an empty string on exception
+        (lambda (x) "") ;; return an empty string on exception
         (lambda ()
             (let* ((fh (open name :read))
                    (data (read fh)))
@@ -68,7 +68,7 @@
         #v)
     (cond 
         (= ac 2)
-            (add-news (nth *command-line* 1))
+            (add-news (nth *command-line* 1) env)
         else
             (begin
                 (display "usage: muse.ss <file.html>\n")
