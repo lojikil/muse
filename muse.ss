@@ -23,9 +23,6 @@
 (define (news->html-file n)
     "process a news name to a file, and open a port to it"
     (let ((name (news-name->html-name n)))
-        (display "%NAME == ")
-        (display name)
-        (newline)
         (open name :write)))
 
 (define (apply-template tmpl ctx)
@@ -39,12 +36,6 @@
         (display
             (string-join (list header news footer) "\n")
             output)
-        ;(display header output)
-        ;(newline output)
-        ;(display (apply-template news {}) output)
-        ;(newline output)
-        ;(display footer output)
-        ;(newline output)
         (close output)))
         
 (let ((ac (length *command-line*)))
