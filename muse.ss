@@ -1,6 +1,6 @@
 #!/usr/bin/env vesta
 (define (file->string name)
-    "borrowed from Racket; takes a file name, and returns the file as lines."
+    "borrowed from Racket; takes a file name, and returns the file as a string."
     (with-exception-handler
         (lambda (x) "") ;; return an empty string on exception
         (lambda ()
