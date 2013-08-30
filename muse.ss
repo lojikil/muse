@@ -88,11 +88,23 @@
                 else ;; just emit & move back to state = 1, unless newline...
                     #f)
         (= state 2)
-            #f
+            (if (eq? (nth tmpl (+ index 1)) #\*)
+                (apply-template tmpl ctx 3 (+ index 1) stack)
+                (begin
+                    (display "<h1>" out)
+                    (apply-template tmpl ctx 1 index (cons 2 stack))))
         (= state 3)
-            #f
+            (if (eq? (nth tmpl (+ index 1)) #\*)
+                (apply-template tmpl ctx 4 (+ index 1) stack)
+                (begin
+                    (display "<h2>" out)
+                    (apply-template tmpl ctx 1 index (cons 3 stack))))
         (= state 4)
-            #f))
+            (if (eq? (nth tmpl (+ index 1)) #\*)
+                (apply-template tmpl ctx 4 (+ index 1) stack)
+                (begin
+                    (display "<h3>" out)
+                    (apply-template tmpl ctx 1 index (cons 4 stack))))))
 
 (define (add-news n env)
     (let ((header (file->string (nth env "header")))
