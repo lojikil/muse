@@ -47,6 +47,13 @@
     (let ((name (news-name->html-name n)))
         (open name :write)))
 
+(define *close-tags* 
+  ["</p>"
+    "</p>"
+    "</h1>"
+    "</h2>"
+    "</h3>"])
+   
 (define (apply-template tmpl ctx (state 0) (index 0) (stack '()))
     "simple templating system; supports a Muse-like (http://mwolson.org/projects/EmacsMuse.html)
      format. I had originally based my work on a simplified Org-mode, which I, ironically, called
@@ -57,6 +64,8 @@
      probably stick to converting Muse (my muse that is) to Markdown & just generating Word/PDF
      documents from that."
     (cond
+        (>= index (length tmpl)) ;; should probably close all open tags here...
+            (display "\n" out)
         (= state 0)
             (if (eq? (nth tmpl index) #\*)
                 (apply-template tmpl ctx 2 (+ index 1) stack) ;; header
@@ -78,33 +87,43 @@
                 (eq? (nth tmpl index) #\\) ;; escape code
                     #f
                 (eq? (nth tmpl index) #\<) ;; entity reference
-                    #f
+                    (begin
+                        (display "&lt;" out)
+                        (apply-template tmpl ctx out 1 (+ index 1) stack))
                 (eq? (nth tmpl index) #\>)
-                    #f
+                    (begin
+                        (display "&gt;" out)
+                        (apply-template tmpl ctx out 1 (+ index 1) stack))
                 (eq? (nth tmpl index) #\&) ;; probably should be smart, in case someone does "&copy;" or the like...
                     #f
                 (eq? (nth tmpl index) #\newline) ;; paragraph closer!
-                    #f
+                    (begin
+                        (if (single-line-state? (car stack))
+                            (display (nth *close-tags* (car stack)) out)
+                            #v)
+                        (apply-template tmpl ctx out 0 (+ index 1) (cdr stack)))
                 else ;; just emit & move back to state = 1, unless newline...
-                    #f)
+                    (begin
+                        (display (nth tmpl index) out)
+                        (apply-template tmpl ctx out 1 (+ index 1) stack))
         (= state 2)
             (if (eq? (nth tmpl (+ index 1)) #\*)
-                (apply-template tmpl ctx 3 (+ index 1) stack)
+                (apply-template tmpl ctx out 3 (+ index 1) stack)
                 (begin
                     (display "<h1>" out)
-                    (apply-template tmpl ctx 1 index (cons 2 stack))))
+                    (apply-template tmpl ctx out 1 index (cons 2 stack))))
         (= state 3)
             (if (eq? (nth tmpl (+ index 1)) #\*)
-                (apply-template tmpl ctx 4 (+ index 1) stack)
+                (apply-template tmpl ctx out 4 (+ index 1) stack)
                 (begin
                     (display "<h2>" out)
-                    (apply-template tmpl ctx 1 index (cons 3 stack))))
+                    (apply-template tmpl ctx out 1 index (cons 3 stack))))
         (= state 4)
             (if (eq? (nth tmpl (+ index 1)) #\*)
-                (apply-template tmpl ctx 4 (+ index 1) stack)
+                (apply-template tmpl ctx out 4 (+ index 1) stack)
                 (begin
                     (display "<h3>" out)
-                    (apply-template tmpl ctx 1 index (cons 4 stack))))))
+                    (apply-template tmpl ctx out 1 index (cons 4 stack))))))
 
 (define (add-news n env)
     (let ((header (file->string (nth env "header")))
