@@ -44,7 +44,7 @@
 
 (define (news->html-file n)
     "process a news name to a file, and open a port to it"
-    (let ((name (news-name->html-name n)))
+    (let ((name (news-name->html-name n "")))
         (open name :write)))
 
 (define *close-tags* 
@@ -53,8 +53,11 @@
     "</h1>"
     "</h2>"
     "</h3>"])
+
+(define (single-line-state? s)
+    (or (= s 2) (= s 3) (= s 4) #f))
    
-(define (apply-template tmpl ctx (state 0) (index 0) (stack '()))
+(define (apply-template tmpl ctx out (state 0) (index 0) (stack '()))
     "simple templating system; supports a Muse-like (http://mwolson.org/projects/EmacsMuse.html)
      format. I had originally based my work on a simplified Org-mode, which I, ironically, called
      muse, not realizing that Emacs *already* had a system called 'Muse' which was similar to what
@@ -63,19 +66,22 @@
      working. Eventually (read: never), I'd like to get this integrated into pandoc, but I'll 
      probably stick to converting Muse (my muse that is) to Markdown & just generating Word/PDF
      documents from that."
+    (display (format "index == ~a and tmp[index] == ~a and state == ~a~%" index (nth tmpl index) state))
     (cond
         (>= index (length tmpl)) ;; should probably close all open tags here...
-            (display "\n" out)
+            (newline out)
         (= state 0)
-            (if (eq? (nth tmpl index) #\*)
-                (apply-template tmpl ctx 2 (+ index 1) stack) ;; header
-                (apply-template tmpl ctx 1 index stack))
-        (= state 1)
-            (cond 
+            (cond
+                (eq? (nth tmpl index) #\*)
+                    (apply-template tmpl ctx out 2 (+ index 1) stack) ;; header
                 (eq? (nth tmpl index) #\#) ;; numerical list
                     #f ;; push down current state?
                 (eq? (nth tmpl index) #\-) ;; 
                     #f
+                else
+                    (apply-template tmpl ctx out 1 index stack))
+        (= state 1)
+            (cond 
                 (eq? (nth tmpl index) #\*) ;; bold 
                     #f
                 (eq? (nth tmpl index) #\[) ;; URL or Image
@@ -101,43 +107,45 @@
                         (if (single-line-state? (car stack))
                             (display (nth *close-tags* (car stack)) out)
                             #v)
+                        (newline out)
                         (apply-template tmpl ctx out 0 (+ index 1) (cdr stack)))
                 else ;; just emit & move back to state = 1, unless newline...
                     (begin
                         (display (nth tmpl index) out)
-                        (apply-template tmpl ctx out 1 (+ index 1) stack))
+                        (apply-template tmpl ctx out 1 (+ index 1) stack)))
         (= state 2)
-            (if (eq? (nth tmpl (+ index 1)) #\*)
+            (if (eq? (nth tmpl index) #\*)
                 (apply-template tmpl ctx out 3 (+ index 1) stack)
                 (begin
                     (display "<h1>" out)
                     (apply-template tmpl ctx out 1 index (cons 2 stack))))
         (= state 3)
-            (if (eq? (nth tmpl (+ index 1)) #\*)
+            (if (eq? (nth tmpl index) #\*)
                 (apply-template tmpl ctx out 4 (+ index 1) stack)
                 (begin
                     (display "<h2>" out)
                     (apply-template tmpl ctx out 1 index (cons 3 stack))))
         (= state 4)
-            (if (eq? (nth tmpl (+ index 1)) #\*)
-                (apply-template tmpl ctx out 4 (+ index 1) stack)
-                (begin
-                    (display "<h3>" out)
-                    (apply-template tmpl ctx out 1 index (cons 4 stack))))))
+            (begin
+                (display "<h3>" out)
+                (apply-template tmpl ctx out 1 index (cons 4 stack)))))
 
 (define (add-news n env)
     (let ((header (file->string (nth env "header")))
           (footer (file->string (nth env "footer")))
           (news (file->string n))
           (output (news->html-file n (nth env "output-directory"))))
-        (display
-            (string-join (list header news footer) "\n")
-            output)
+        (display header output)
+        (newline output)
+        (apply-template news env output)
+        (newline output)
+        (display footer output) ;; woah! why wasn't that complaining about out!?!?!
+        (newline output)
         (close output)))
         
 (let ((ac (length *command-line*))
       (env? (sys/stat "./config.ss"))
-      (env {"header" "./header.html" "footer" "./footer.html" "output" ""}))
+      (env {"header" "./header.html" "footer" "./footer.html" "output-directory" ""}))
     (if (vector? env?) ;; can we find config.ss?
         (dict-merge env (file->object "./config.ss"))
         #v)
