@@ -66,7 +66,7 @@
      working. Eventually (read: never), I'd like to get this integrated into pandoc, but I'll 
      probably stick to converting Muse (my muse that is) to Markdown & just generating Word/PDF
      documents from that."
-    (display (format "index == ~a and tmp[index] == ~a and state == ~a~%" index (nth tmpl index) state))
+    #;(display (format "index == ~a and tmp[index] == ~a and state == ~a~%" index (nth tmpl index) state))
     (cond
         (>= index (length tmpl)) ;; should probably close all open tags here...
             (newline out)
@@ -87,11 +87,15 @@
                 (eq? (nth tmpl index) #\[) ;; URL or Image
                     #f
                 (eq? (nth tmpl index) #\`) ;; Code
-                    #f
+                    (begin
+                        (display "<code>" out)
+                        (apply-template tmpl ctx out 8 (+ index 1) (cons 8 stack)))
                 (eq? (nth tmpl index) #\{) ;; table
                     #f
                 (eq? (nth tmpl index) #\\) ;; escape code
-                    #f
+                    (begin
+                        (display (nth tmpl (+ index 1)) out)
+                        (apply-teplate tmpl ctx out 1 (+ index 2) stack))
                 (eq? (nth tmpl index) #\<) ;; entity reference
                     (begin
                         (display "&lt;" out)
@@ -104,9 +108,13 @@
                     #f
                 (eq? (nth tmpl index) #\newline) ;; paragraph closer!
                     (begin
-                        (if (single-line-state? (car stack))
-                            (display (nth *close-tags* (car stack)) out)
-                            #v)
+                        (cond
+                            (single-line-state? (car stack))
+                                (display (nth *close-tags* (car stack)) out)
+                            (eq? (nth tmpl (+ index 1)) #\newline)
+                                (display "<br>" out)
+                            else
+                                #v)
                         (newline out)
                         (apply-template tmpl ctx out 0 (+ index 1) (cdr stack)))
                 else ;; just emit & move back to state = 1, unless newline...
@@ -128,7 +136,25 @@
         (= state 4)
             (begin
                 (display "<h3>" out)
-                (apply-template tmpl ctx out 1 index (cons 4 stack)))))
+                (apply-template tmpl ctx out 1 index (cons 4 stack)))
+        (= state 8)
+            (cond
+                (eq? (nth tmpl index) #\`)
+                    (begin
+                        (display "</code>" out)
+                        (apply-template tmpl ctx out 1 (+ index 1) (cdr stack)))
+                (eq? (nth tmpl index) #\newline)
+                    (begin
+                        (display "<br>" out)
+                        (apply-template tmpl ctx out 8 (+ index 1) stack))
+                (eq? (nth tmpl index) #\\)
+                    (begin
+                        (display (nth tmpl (+ index 1)) out)
+                        (apply-template tmpl ctx out 8 (+ index 2) stack))
+                else
+                    (begin
+                        (display (nth tmpl index) out)
+                        (apply-template tmpl ctx out 8 (+ index 1) stack)))))
 
 (define (add-news n env)
     (let ((header (file->string (nth env "header")))
