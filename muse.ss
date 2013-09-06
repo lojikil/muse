@@ -56,6 +56,35 @@
 
 (define (single-line-state? s)
     (or (= s 2) (= s 3) (= s 4) #f))
+
+(define (apply-backtick tmpl ctx out state index stack)
+    (cond
+        (eq? (nth tmpl index) #\`)
+            (begin
+                (if (= state 8)
+                    (display "</code>" out)
+                    (display "</pre>" out))
+                (apply-template tmpl ctx out 0 (+ index 1) stack))
+        (eq? (nth tmpl index) #\<)
+            (begin
+                (display "&lt;" out)
+                (apply-backtick tmpl ctx out state (+ index 1) stack))
+        (eq? (nth tmpl index) #\>)
+            (begin
+                (display "&gt;" out)
+                (apply-backtick tmpl ctx out state (+ index 1) stack))
+        (eq? (nth tmpl index) #\&)
+            (begin
+                (display "&amp;" out)
+                (apply-backtick tmpl ctx out state (+ index 1) stack))
+        (eq? (nth tmpl index) #\\)
+            (begin
+                (display (nth tmpl (+ index 1)) out)
+                (apply-backtick tmpl ctx out state (+ index 2) stack))
+        else
+            (begin
+                (display (nth tmpl index) out)
+                (apply-backtick tmpl ctx out state (+ index 1) stack))))
    
 (define (apply-template tmpl ctx out (state 0) (index 0) (stack '()))
     "simple templating system; supports a Muse-like (http://mwolson.org/projects/EmacsMuse.html)
@@ -74,6 +103,10 @@
             (cond
                 (eq? (nth tmpl index) #\*)
                     (apply-template tmpl ctx out 2 (+ index 1) stack) ;; header
+                (eq? (nth tmpl index) #\`) ;; Longer code snippet
+                    (begin
+                        (display "<pre>" out)
+                        (apply-template tmpl ctx out 9 (+ index 1) stack))
                 (eq? (nth tmpl index) #\#) ;; numerical list
                     #f ;; push down current state?
                 (eq? (nth tmpl index) #\-) ;; 
@@ -89,7 +122,7 @@
                 (eq? (nth tmpl index) #\`) ;; Code
                     (begin
                         (display "<code>" out)
-                        (apply-template tmpl ctx out 8 (+ index 1) (cons 8 stack)))
+                        (apply-template tmpl ctx out 8 (+ index 1) stack))
                 (eq? (nth tmpl index) #\{) ;; table
                     #f
                 (eq? (nth tmpl index) #\\) ;; escape code
@@ -138,23 +171,9 @@
                 (display "<h3>" out)
                 (apply-template tmpl ctx out 1 index (cons 4 stack)))
         (= state 8)
-            (cond
-                (eq? (nth tmpl index) #\`)
-                    (begin
-                        (display "</code>" out)
-                        (apply-template tmpl ctx out 1 (+ index 1) (cdr stack)))
-                (eq? (nth tmpl index) #\newline)
-                    (begin
-                        (display "<br>" out)
-                        (apply-template tmpl ctx out 8 (+ index 1) stack))
-                (eq? (nth tmpl index) #\\)
-                    (begin
-                        (display (nth tmpl (+ index 1)) out)
-                        (apply-template tmpl ctx out 8 (+ index 2) stack))
-                else
-                    (begin
-                        (display (nth tmpl index) out)
-                        (apply-template tmpl ctx out 8 (+ index 1) stack)))))
+            (apply-backtick tmpl ctx out state index stack)
+        (= state 9)
+            (apply-backtick tmpl ctx out state index stack)))
 
 (define (add-news n env)
     (let ((header (file->string (nth env "header")))
