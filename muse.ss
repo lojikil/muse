@@ -108,7 +108,13 @@
                         (display "<pre>" out)
                         (apply-template tmpl ctx out 9 (+ index 1) stack))
                 (eq? (nth tmpl index) #\#) ;; numerical list
-                    #f ;; push down current state?
+                    ;; emit two states:
+                    ;; - ordered-list-wrapper
+                    ;; - list-item
+                    ;; when a list item hits #\newline, state goes to 0, which
+                    ;; then has to check if a 'ordered-list-wrapper' is already
+                    ;; on the stack, and if not, emit a <ol>. Somewhat complex...
+                    #f 
                 (eq? (nth tmpl index) #\-) ;; 
                     #f
                 else
