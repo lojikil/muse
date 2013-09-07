@@ -116,7 +116,21 @@
         (= state 1)
             (cond 
                 (eq? (nth tmpl index) #\*) ;; bold 
-                    #f
+                    (if (= (car stack) 5)
+                        (begin
+                            (display "</span>" out)
+                            (apply-template tmpl ctx out 1 (+ index 1) (cdr stack)))
+                        (begin
+                            (display "<span class=\"muse-bold\">" out)
+                            (apply-template tmpl ctx out 1 (+ index 1) (cons 5 stack))))
+                (eq? (nth tmpl index) #\_) ;; italic 
+                    (if (= (car stack) 6)
+                        (begin
+                            (display "</span>" out)
+                            (apply-template tmpl ctx out 1 (+ index 1) (cdr stack)))
+                        (begin
+                            (display "<span class=\"muse-italic\">" out)
+                            (apply-template tmpl ctx out 1 (+ index 1) (cons 6 stack))))
                 (eq? (nth tmpl index) #\[) ;; URL or Image
                     #f
                 (eq? (nth tmpl index) #\`) ;; Code
