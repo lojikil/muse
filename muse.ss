@@ -105,7 +105,7 @@
                     (apply-template tmpl ctx out 2 (+ index 1) stack) ;; header
                 (eq? (nth tmpl index) #\`) ;; Longer code snippet
                     (begin
-                        (display "<pre>" out)
+                        (display "<pre class=\"muse-code\">" out)
                         (apply-template tmpl ctx out 9 (+ index 1) stack))
                 (eq? (nth tmpl index) #\#) ;; numerical list
                     ;; emit two states:
@@ -141,7 +141,7 @@
                     #f
                 (eq? (nth tmpl index) #\`) ;; Code
                     (begin
-                        (display "<code>" out)
+                        (display "<code class=\"muse-code\">" out)
                         (apply-template tmpl ctx out 8 (+ index 1) stack))
                 (eq? (nth tmpl index) #\{) ;; table
                     #f
