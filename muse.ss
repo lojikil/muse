@@ -52,10 +52,21 @@
     "</p>"
     "</h1>"
     "</h2>"
-    "</h3>"])
+    "</h3>"
+    0
+    0
+    0
+    0
+    "</ol>"
+    "</li>"
+    "</ul>"
+    "</li>"])
 
 (define (single-line-state? s)
-    (or (= s 2) (= s 3) (= s 4) #f))
+    (or (= s 2) (= s 3) (= s 4) (= s 11) (= s 13) #f))
+
+(define (grouped-line-state? s)
+    (or (= s 10) (= s 12) #f))
 
 (define (apply-backtick tmpl ctx out state index stack)
     (cond
@@ -114,9 +125,17 @@
                     ;; when a list item hits #\newline, state goes to 0, which
                     ;; then has to check if a 'ordered-list-wrapper' is already
                     ;; on the stack, and if not, emit a <ol>. Somewhat complex...
-                    #f 
+                    (begin
+                        (if (not (eq? (car stack) 10))
+                            (display "<ol>\n<li>" out)
+                            (display "<li>" out))
+                        (apply-template tmpl ctx out 1 (+ index 1) (append (list 11 10) stack)))
                 (eq? (nth tmpl index) #\-) ;; 
-                    #f
+                    (begin
+                        (if (not (eq? (car stack) 12))
+                            (display "<ul>\n<li>" out)
+                            (display "<li>" out))
+                        (apply-template tmpl ctx out 1 (+ index 1) (append (list 13 12) stack)))
                 else
                     (apply-template tmpl ctx out 1 index stack))
         (= state 1)
@@ -165,7 +184,9 @@
                             (single-line-state? (car stack))
                                 (display (nth *close-tags* (car stack)) out)
                             (eq? (nth tmpl (+ index 1)) #\newline)
-                                (display "<br>" out)
+                                (if (grouped-line-state? (car stack))
+                                    (display (nth *close-tags* (car stack)) out)
+                                    (display "<br>" out))
                             else
                                 #v)
                         (newline out)
