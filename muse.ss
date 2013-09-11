@@ -107,8 +107,8 @@
      working. Eventually (read: never), I'd like to get this integrated into pandoc, but I'll 
      probably stick to converting Muse (my muse that is) to Markdown & just generating Word/PDF
      documents from that."
-    (display (format "index == ~a and tmp[index] == ~A and state == ~a~%" index (nth tmpl index) state))
-    (display (format "stack == ~A~%" stack))
+    #;(display (format "index == ~a and tmp[index] == ~A and state == ~a~%" index (nth tmpl index) state))
+    #;(display (format "stack == ~A~%" stack))
     (cond
         (>= index (length tmpl)) ;; should probably close all open tags here...
             (newline out)
