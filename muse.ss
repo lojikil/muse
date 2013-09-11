@@ -252,7 +252,7 @@
                     (display "\" alt=\"" out)
                     (apply-template tmpl ctx out 1 (+ index 1) (cons 15 stack)))
                 (begin
-                    (display (nth tmpl index) out)
+                    (display (nth tmpl index) out) ;; a takeWhile here would mean calling display once...
                     (apply-template tmpl ctx out 15 (+ index 1) stack)))))
 
 (define (add-news n env)
