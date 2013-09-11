@@ -107,7 +107,8 @@
      working. Eventually (read: never), I'd like to get this integrated into pandoc, but I'll 
      probably stick to converting Muse (my muse that is) to Markdown & just generating Word/PDF
      documents from that."
-    (display (format "index == ~a and tmp[index] == ~a and state == ~a~%" index (nth tmpl index) state))
+    (display (format "index == ~a and tmp[index] == ~A and state == ~a~%" index (nth tmpl index) state))
+    (display (format "stack == ~A~%" stack))
     (cond
         (>= index (length tmpl)) ;; should probably close all open tags here...
             (newline out)
@@ -126,11 +127,13 @@
                     ;; when a list item hits #\newline, state goes to 0, which
                     ;; then has to check if a 'ordered-list-wrapper' is already
                     ;; on the stack, and if not, emit a <ol>. Somewhat complex...
-                    (begin
-                        (if (not (eq? (car stack) 10))
+                    (if (not (eq? (car stack) 10))
+                        (begin
                             (display "<ol>\n<li>" out)
-                            (display "<li>" out))
-                        (apply-template tmpl ctx out 1 (+ index 1) (append (list 11 10) stack)))
+                            (apply-template tmpl ctx out 1 (+ index 1) (append (list 11 10) stack)))
+                        (begin
+                            (display "<li>" out)
+                            (apply-template tmpl ctx out 1 (+ index 1) (cons 11 stack))))
                 (eq? (nth tmpl index) #\newline)
                     (if (grouped-line-state? (car stack))
                         (begin
@@ -141,11 +144,13 @@
                             (display "<br>\n" out)
                             (apply-template tmpl ctx out 0 (+ index 1) stack)))
                 (eq? (nth tmpl index) #\-) ;; 
-                    (begin
-                        (if (not (eq? (car stack) 12))
+                    (if (not (eq? (car stack) 12))
+                        (begin
                             (display "<ul>\n<li>" out)
-                            (display "<li>" out))
-                        (apply-template tmpl ctx out 1 (+ index 1) (append (list 13 12) stack)))
+                            (apply-template tmpl ctx out 1 (+ index 1) (append (list 13 12) stack)))
+                        (begin
+                            (display "<li>" out)
+                            (apply-template tmpl ctx out 1 (+ index 1) (cons 13 stack))))
                 else
                     (apply-template tmpl ctx out 1 index stack))
         (= state 1)
@@ -167,7 +172,19 @@
                             (display "<span class=\"muse-italic\">" out)
                             (apply-template tmpl ctx out 1 (+ index 1) (cons 6 stack))))
                 (eq? (nth tmpl index) #\[) ;; URL or Image
-                    #f
+                    (if (eq? (nth tmpl (+ index 1)) #\!)
+                        (begin
+                            (display "<img src=\"" out)
+                            (apply-template tmpl ctx out 15 (+ index 2) stack))
+                        (begin
+                            (display "<a href=\"" out)
+                            (apply-template tmpl ctx out 14 (+ index 1) stack)))
+                (eq? (nth tmpl index) #\]) ;; close URL or Image
+                    (begin
+                        (if (eq? (car stack) 14)
+                            (display "</a>" out)
+                            (display "\">" out))
+                        (apply-template tmpl ctx out 1 (+ index 1) (cdr stack)))
                 (eq? (nth tmpl index) #\`) ;; Code
                     (begin
                         (display "<code class=\"muse-code\">" out)
@@ -189,12 +206,14 @@
                 (eq? (nth tmpl index) #\&) ;; probably should be smart, in case someone does "&copy;" or the like...
                     #f
                 (eq? (nth tmpl index) #\newline) ;; paragraph closer!
-                    (begin
-                         (if (single-line-state? (car stack))
-                             (display (nth *close-tags* (car stack)) out)
-                             #v)
-                        (newline out)
-                        (apply-template tmpl ctx out 0 (+ index 1) (cdr stack)))
+                    (if (single-line-state? (car stack))
+                        (begin
+                            (display (nth *close-tags* (car stack)) out)
+                            (newline out)
+                            (apply-template tmpl ctx out 0 (+ index 1) (cdr stack)))
+                        (begin
+                            (newline out)
+                            (apply-template tmpl ctx out 0 (+ index 1) stack)))
                 else ;; just emit & move back to state = 1, unless newline...
                     (begin
                         (display (nth tmpl index) out)
@@ -218,7 +237,23 @@
         (= state 8)
             (apply-backtick tmpl ctx out state index stack)
         (= state 9)
-            (apply-backtick tmpl ctx out state index stack)))
+            (apply-backtick tmpl ctx out state index stack)
+        (= state 14)
+            (if (eq? (nth tmpl index) #\space)
+                (begin
+                    (display "\">" out)
+                    (apply-template tmpl ctx out 1 (+ index 1) (cons 14 stack)))
+                (begin
+                    (display (nth tmpl index) out)
+                    (apply-template tmpl ctx out 14 (+ index 1) stack)))
+        (= state 15)
+            (if (eq? (nth tmpl index) #\space)
+                (begin
+                    (display "\" alt=\"" out)
+                    (apply-template tmpl ctx out 1 (+ index 1) (cons 15 stack)))
+                (begin
+                    (display (nth tmpl index) out)
+                    (apply-template tmpl ctx out 15 (+ index 1) stack)))))
 
 (define (add-news n env)
     (let ((header (file->string (nth env "header")))
