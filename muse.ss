@@ -194,7 +194,7 @@
                 (eq? (nth tmpl index) #\\) ;; escape code
                     (begin
                         (display (nth tmpl (+ index 1)) out)
-                        (apply-teplate tmpl ctx out 1 (+ index 2) stack))
+                        (apply-template tmpl ctx out 1 (+ index 2) stack))
                 (eq? (nth tmpl index) #\<) ;; entity reference
                     (begin
                         (display "&lt;" out)
@@ -204,7 +204,9 @@
                         (display "&gt;" out)
                         (apply-template tmpl ctx out 1 (+ index 1) stack))
                 (eq? (nth tmpl index) #\&) ;; probably should be smart, in case someone does "&copy;" or the like...
-                    #f
+                    (begin
+                        (display "&amp;" out)
+                        (apply-template tmpl ctx out 1 (+ index 1) stack))
                 (eq? (nth tmpl index) #\newline) ;; paragraph closer!
                     (if (single-line-state? (car stack))
                         (begin
