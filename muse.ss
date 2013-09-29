@@ -224,7 +224,7 @@
             (if (eq? (nth tmpl index) #\*)
                 (apply-template tmpl ctx out 3 (+ index 1) stack)
                 (begin
-                    (display "<h1>" out)
+                    (display "<br>\n<h1>" out)
                     (apply-template tmpl ctx out 1 index (cons 2 stack))))
         (= state 3)
             (if (eq? (nth tmpl index) #\*)
