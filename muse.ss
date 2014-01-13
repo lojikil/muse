@@ -49,19 +49,24 @@
         (open name :write)))
 
 (define (collated-breadcrumbs crumbs start lst)
-    (if (null? crumbs)
-        (let ((curstr (string-append start "/" (car crumbs))))
+    " takes a list of bread crumbs, and returns an a-list of bread crumb name
+ and path that can be used to link to the \"level up\""
+    (if (not (null? crumbs))
+        (let ((curstr (string-append start (car crumbs) "/")))
             (collated-breadcrumbs
                 (cdr crumbs)
                 curstr
-                (append lst (list curstr))))
+                (append lst (list (list (car crumbs) curstr)))))
         lst))
 
 (define (news-name->breadcrumbs n output)
+    "simple handler that tokenizes n (a path) and returns the a-list
+ of bread crumbs as returned by collated-breadcrumbs"
     (let ((arr (string-tokenize-char n #\/)))
         (collated-breadcrumbs
             (cdr arr)
-            (string-append "/" (car arr)))))
+            (string-append "/" (car arr))
+            '())))
 
 (define *close-tags* 
   ["</p>"
