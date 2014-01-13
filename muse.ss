@@ -64,16 +64,18 @@
  of bread crumbs as returned by collated-breadcrumbs"
     (let ((arr (string-tokenize-char n #\/)))
         (collated-breadcrumbs
-            (cdr arr)
-            (string-append "/" (car arr))
+            arr
+            "/" 
             '())))
 
 (define (make-breadcrumbs n output)
     "a procedure to actually handle the proces of formatting the alist as a HTML anchor tag"
     (let ((crumbs-alist (news-name->breadcrumbs n output)))
-        (map
-            (fn (x) (string-append "<a href=\"" (cadr x) "\">" (car x) "</a>"))
-            crumbs-alist)))
+        (string-join
+            (map
+                (fn (x) (string-append "<a href=\"" (cadr x) "\">" (car x) "</a>"))
+                crumbs-alist)
+            " | ")))
 
 (define *close-tags* 
   ["</p>"
@@ -292,8 +294,8 @@
           (output (news->html-file n (nth env "output-directory"))))
         (display header output)
         (newline output)
-        #;(display (make-breadcrumbs n (nth env "output-directory")) output)
-        #;(newline)
+        (display (make-breadcrumbs n (nth env "output-directory")) output)
+        (newline output)
         (apply-template news env output)
         (newline output)
         (display footer output) ;; woah! why wasn't that complaining about out!?!?!
