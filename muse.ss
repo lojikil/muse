@@ -68,6 +68,13 @@
             (string-append "/" (car arr))
             '())))
 
+(define (make-breadcrumbs n output)
+    "a procedure to actually handle the proces of formatting the alist as a HTML anchor tag"
+    (let ((crumbs-alist (news-name->breadcrumbs n output)))
+        (map
+            (fn (x) (string-append "<a href=\"" (cadr x) "\">" (car x) "</a>"))
+            crumbs-alist)))
+
 (define *close-tags* 
   ["</p>"
     "</p>"
