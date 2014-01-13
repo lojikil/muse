@@ -62,7 +62,7 @@
 (define (news-name->breadcrumbs n output)
     "simple handler that tokenizes n (a path) and returns the a-list
  of bread crumbs as returned by collated-breadcrumbs"
-    (let ((arr (string-tokenize-char n #\/)))
+    (let ((arr (string-tokenize-char n #\/))) ;; need to fix "./foo/test.txt" and "foo/test.txt"
         (collated-breadcrumbs
             arr
             "/" 
