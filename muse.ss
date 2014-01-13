@@ -292,6 +292,8 @@
           (output (news->html-file n (nth env "output-directory"))))
         (display header output)
         (newline output)
+        #;(display (make-breadcrumbs n (nth env "output-directory")) output)
+        #;(newline)
         (apply-template news env output)
         (newline output)
         (display footer output) ;; woah! why wasn't that complaining about out!?!?!
