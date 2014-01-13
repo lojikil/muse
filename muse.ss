@@ -1,4 +1,5 @@
 #!/usr/bin/env vesta
+
 (define (file->string name)
     "borrowed from Racket; takes a file name, and returns the file as a string."
     (with-exception-handler
@@ -46,6 +47,21 @@
     "process a news name to a file, and open a port to it"
     (let ((name (news-name->html-name n "")))
         (open name :write)))
+
+(define (collated-breadcrumbs crumbs start lst)
+    (if (null? crumbs)
+        (let ((curstr (string-append start "/" (car crumbs))))
+            (collated-breadcrumbs
+                (cdr crumbs)
+                curstr
+                (append lst (list curstr))))
+        lst))
+
+(define (news-name->breadcrumbs n output)
+    (let ((arr (string-tokenize-char n #\/)))
+        (collated-breadcrumbs
+            (cdr arr)
+            (string-append "/" (car arr)))))
 
 (define *close-tags* 
   ["</p>"
