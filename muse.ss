@@ -141,7 +141,11 @@
     #;(display (format "stack == ~A~%" stack))
     (cond
         (>= index (length tmpl)) ;; should probably close all open tags here...
-            (newline out)
+            (if (null? stack)
+                (newline out)
+                (foreach
+                    (fn (x) (display (nth *close-tags* x) out))
+                    stack))
         (= state 0)
             (cond
                 (eq? (nth tmpl index) #\*)
