@@ -137,6 +137,8 @@
      working. Eventually (read: never), I'd like to get this integrated into pandoc, but I'll 
      probably stick to converting Muse (my muse that is) to Markdown & just generating Word/PDF
      documents from that."
+    ;; really need to convert this to generating SXML, then from there the sky's the limit...
+    ;; as a quick hack, this works, but for anything longer term, this should be fixed...
     #;(display (format "index == ~a and tmp[index] == ~A and state == ~a~%" index (nth tmpl index) state))
     #;(display (format "stack == ~A~%" stack))
     (cond
@@ -300,6 +302,7 @@
         (newline output)
         (display (make-breadcrumbs n (nth env "output-directory")) output)
         (newline output)
+        (display "<br>\n" output)
         (apply-template news env output)
         (newline output)
         (display footer output) ;; woah! why wasn't that complaining about out!?!?!
