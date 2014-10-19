@@ -44,6 +44,17 @@
         (data (prompt-string "url: ")))
         (cset! *urls* title data)))
 
+(define (add-url title url)
+    (cset! *urls* title url))
+
+(define (add-note title note)
+    (let  ((f (open (format "~s/notes/~a" *base-dir* (sys/time)) :write)) )
+        (display (format "* ~s\n" title) f)
+        (display note f)
+        (newline f)
+        (close f)
+        (cset! *notes* title (port-filename f))))
+
 (define (list-notes)
     (foreach-proc 
         (lambda (k) (display (format "~s\n" k)))
@@ -52,7 +63,7 @@
 (define (list-urls)
     (foreach-proc 
         (lambda (k)
-            (display (format "~S ~s\n" k (nth *urls* k))))
+            (display (format "~s ~s\n" k (nth *urls* k))))
         (keys *urls*)))
 
 (define (about-anaxagoras)
@@ -101,7 +112,7 @@
         (eq? c "e") (begin (edit-note) (anaxagoras))
         (eq? c "S") (begin (run-shutdown) (anaxagoras))
         (eq? c "q") (run-shutdown)
-        else (display "Invalid command\n"))))
+        else (begin (display "Invalid command\n") (anaxagoras)))))
 
 ;; load the notes & urls list
 (let ((fnote (open (format "~s/notes.ss" *base-dir*) :read))
@@ -111,5 +122,39 @@
     (close fnote)
     (close furls))
 
-(display "Welcome to anaxagoras, a note/url organizer\n")
-(anaxagoras)
+(if (zero? (length *command-line*))
+    (begin
+        (display "Welcome to anaxagoras, a note/url organizer\n")
+        (anaxagoras))
+    (let ((cmd (nth *command-line* 1))
+          (args (cslice *command-line* 2 -1)))
+        (write args)
+        (newline)
+        (cond
+            (or 
+                (eq? cmd "add-note")
+                (eq? cmd "note")
+                (eq? cmd "n"))
+                (if (empty? args)
+                    (new-note)
+                    (add-note (nth args 0) (nth args 1)))
+            (or
+                (eq? cmd "add-url")
+                (eq? cmd "url")
+                (eq? cmd "u"))
+                (if (empty? args)
+                    (new-url)
+                    (add-url (nth args 0) (nth args 1)))
+            (or
+                (eq? cmd "list-notes")
+                (eq? cmd "l")
+                (eq? cmd "notes"))
+                (list-notes)
+            (or
+                (eq? cmd "list-urls")
+                (eq? cmd "urls")
+                (eq? cmd "L"))
+                (list-urls)
+            else
+                (about-anaxagoras))
+        (run-shutdown)))
