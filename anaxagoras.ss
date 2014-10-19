@@ -29,6 +29,27 @@
             (eq? r #e) '()
             else (cons r (int-read)))))
 
+(define (pager set n rows)
+    (cond
+        (>= n (length set)) #v
+        (and (not (zero? n)) (zero? (modulo n rows)))
+            (let ((user-input (prompt-string "continue> ")))
+                (if (or (eq? user-input "q") (eq? user-input "Q"))
+                    #v
+                    (begin
+                        (display (nth set n))
+                        (newline)
+                        (pager set (+ n 1) rows))))
+        else 
+            (begin
+                (display (nth set n))
+                (newline)
+                (pager set (+ n 1) rows))))
+
+;; the list interfaces, as well as the edit & view selectors
+;; should make use of `pager`, to make it cleaner for a
+;; user to select or find a document
+
 (define (new-note) 
     (let  ((f (open (format "~s/notes/~a" *base-dir* (sys/time)) :write)) 
           (title (prompt-string "title: "))
@@ -63,7 +84,7 @@
 (define (list-urls)
     (foreach-proc 
         (lambda (k)
-            (display (format "~s ~s\n" k (nth *urls* k))))
+            (display (format "~s => ~s\n" k (nth *urls* k))))
         (keys *urls*)))
 
 (define (about-anaxagoras)
@@ -72,6 +93,7 @@
  Usage:
   n[ew]     - create a new note
   e[dit]    - edit a note (uses $EDITOR)
+  v[iew]    - view a note (pages to screen)
   u[rl]     - create a new URL bookmark
   l[ist]    - list all notes
   L[ist]    - list all URLs
@@ -110,6 +132,7 @@
         (eq? c "h") (begin (about-anaxagoras) (anaxagoras))
         (eq? c "?") (begin (about-anaxagoras) (anaxagoras))
         (eq? c "e") (begin (edit-note) (anaxagoras))
+        (eq? c "v") (begin (view-note) (anaxagoras))
         (eq? c "S") (begin (run-shutdown) (anaxagoras))
         (eq? c "q") (run-shutdown)
         else (begin (display "Invalid command\n") (anaxagoras)))))
@@ -128,8 +151,6 @@
         (anaxagoras))
     (let ((cmd (nth *command-line* 1))
           (args (cslice *command-line* 2 -1)))
-        (write args)
-        (newline)
         (cond
             (or 
                 (eq? cmd "add-note")
